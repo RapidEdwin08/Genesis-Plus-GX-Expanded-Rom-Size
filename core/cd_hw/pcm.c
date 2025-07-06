@@ -2,7 +2,7 @@
  *  Genesis Plus
  *  PCM sound chip (315-5476A) (RF5C164 compatible)
  *
- *  Copyright (C) 2012-2021  Eke-Eke (Genesis Plus GX)
+ *  Copyright (C) 2012-2023  Eke-Eke (Genesis Plus GX)
  *
  *  Redistribution and use of this code or any derivative works are permitted
  *  provided that the following conditions are met:
@@ -37,6 +37,11 @@
  ****************************************************************************************/
 #include "shared.h"
 
+extern int8 audio_hard_disable;
+#define SILENT_RUN_PCM_ADDRESS
+
+extern int8 reset_do_not_clear_buffers;
+
 #define PCM_SCYCLES_RATIO (384 * 4)
 
 #define pcm scd.pcm_hw
@@ -51,7 +56,10 @@ void pcm_init(double clock, int samplerate)
 void pcm_reset(void)
 {
   /* reset chip & clear external RAM */
-  memset(&pcm, 0, sizeof(pcm_t));
+  if (!reset_do_not_clear_buffers)
+  {
+    memset(&pcm, 0, sizeof(pcm_t));
+  }
 
   /* reset default bank */
   pcm.bank = pcm.ram;
@@ -110,6 +118,47 @@ int pcm_context_load(uint8 *state)
   return bufferptr;
 }
 
+static void pcm_run_silent(unsigned int length)
+{
+#ifdef SILENT_RUN_PCM_ADDRESS
+  /* Silent Version - Only updates sample address */
+  if (pcm.enabled)
+  {
+    int i, j;
+
+    /* run eight PCM channels */
+    for (j = 0; j<8; j++)
+    {
+      /* check if channel is enabled and increment is greater than zero */
+      if (pcm.status & (1 << j) && pcm.chan[j].fd.w > 0)
+      {
+        for (i = 0; i<length; i++)
+        {
+          /* read from current WAVE RAM address */
+          short data = pcm.ram[(pcm.chan[j].addr >> 11) & 0xffff];
+
+          /* loop data ? */
+          if (data == 0xff)
+          {
+            /* reset WAVE RAM address */
+            pcm.chan[j].addr = pcm.chan[j].ls.w << 11;
+          }
+          else
+          {
+            /* increment WAVE RAM address */
+            pcm.chan[j].addr += pcm.chan[j].fd.w;
+          }
+        }
+      }
+    }
+  }
+#endif
+  /* end of blip buffer frame */
+  blip_end_frame(snd.blips[1], length);
+
+  pcm.cycles += length * PCM_SCYCLES_RATIO;
+}
+
 void pcm_run(unsigned int length)
 {
 #ifdef LOG_PCM
@@ -119,6 +168,12 @@ void pcm_run(unsigned int length)
   /* previous audio outputs */
   int prev_l = pcm.out[0];
   int prev_r = pcm.out[1];
+
+  if (audio_hard_disable)
+  {
+    pcm_run_silent(length);
+    return;
+  }
 
   /* check if PCM chip is running */
   if (pcm.enabled)
@@ -395,36 +450,31 @@ unsigned char pcm_read(unsigned int address, unsigned int cycles)
   return 0xff;
 }
 
-void pcm_ram_dma_w(unsigned int words)
+void pcm_ram_dma_w(unsigned int length)
 {
-  uint16 data;
-
   /* CDC buffer source address */
-  uint16 src_index = cdc.dac.w & 0x3ffe;
+  uint16 src_index = cdc.dac.w & 0x3fff;
   
   /* PCM-RAM destination address*/
-  uint16 dst_index = (scd.regs[0x0a>>1].w << 2) & 0xffe;
+  uint16 dst_index = (scd.regs[0x0a>>1].w << 2) & 0xfff;
   
   /* update DMA destination address */
-  scd.regs[0x0a>>1].w += (words >> 1);
+  scd.regs[0x0a>>1].w += (length >> 2);
 
   /* update DMA source address */
-  cdc.dac.w += (words << 1);
+  cdc.dac.w += length;
 
   /* DMA transfer */
-  while (words--)
+  while (length--)
   {
-    /* read 16-bit word from CDC buffer */
-    data = *(uint16 *)(cdc.ram + src_index);
-
-    /* write 16-bit word to PCM RAM (endianness does not matter since PCM RAM is always accessed as byte)*/
-    *(uint16 *)(pcm.bank + dst_index) = data ;
+    /* copy byte from CDC buffer to PCM RAM bank */
+    pcm.bank[dst_index] = cdc.ram[src_index];
 
     /* increment CDC buffer source address */
-    src_index = (src_index + 2) & 0x3ffe;
+    src_index = (src_index + 1) & 0x3fff;
 
     /* increment PCM-RAM destination address */
-    dst_index = (dst_index + 2) & 0xffe;
+    dst_index = (dst_index + 1) & 0xfff;
   }
 }
 
