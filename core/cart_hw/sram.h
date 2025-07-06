@@ -2,7 +2,7 @@
  *  Genesis Plus
  *  Backup RAM support
  *
- *  Copyright (C) 2007-2021  Eke-Eke (Genesis Plus GX)
+ *  Copyright (C) 2007-2024  Eke-Eke (Genesis Plus GX)
  *
  *  Redistribution and use of this code or any derivative works are permitted
  *  provided that the following conditions are met:
@@ -51,7 +51,7 @@ typedef struct
 } T_SRAM;
 
 /* Function prototypes */
-extern void sram_init();
+extern void sram_init(void);
 extern unsigned int sram_read_byte(unsigned int address);
 extern unsigned int sram_read_word(unsigned int address);
 extern void sram_write_byte(unsigned int address, unsigned int data);

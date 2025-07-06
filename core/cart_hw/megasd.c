@@ -2,7 +2,7 @@
  *  Genesis Plus
  *  MegaSD flashcart CD hardware interface overlay & enhanced ROM mappers
  *
- *  Copyright (C) 2020-2021 Eke-Eke (Genesis Plus GX)
+ *  Copyright (C) 2020-2022 Eke-Eke (Genesis Plus GX)
  *
  *  Redistribution and use of this code or any derivative works are permitted
  *  provided that the following conditions are met:
@@ -91,10 +91,13 @@ void megasd_reset(void)
   m68k.memory_map[0x03].write16 = megasd_ctrl_write_word;
   zbank_memory_map[0x03].read   = megasd_ctrl_read_byte;
 
-  /* reset CD hardware */
-  pcm_reset();
-  cdd_reset();
-  scd.regs[0x36>>1].byte.h = 0x01;
+  /* reset CD hardware (only if not already emulated) */
+  if (system_hw != SYSTEM_MCD)
+  {
+    pcm_reset();
+    cdd_reset();
+    scd.regs[0x36>>1].byte.h = 0x01;
+  }
 }
 
 int megasd_context_save(uint8 *state)
@@ -102,9 +105,14 @@ int megasd_context_save(uint8 *state)
   int bufferptr = 0;
 
   save_param(&megasd_hw, sizeof(megasd_hw));
-  bufferptr += cdd_context_save(&state[bufferptr]);
-  bufferptr += pcm_context_save(&state[bufferptr]);
-  save_param(&scd.regs[0x36>>1].byte.h, 1);
+
+  /* save needed CD hardware state (only if not already saved) */
+  if (system_hw != SYSTEM_MCD)
+  {
+    bufferptr += cdd_context_save(&state[bufferptr]);
+    bufferptr += pcm_context_save(&state[bufferptr]);
+    save_param(&scd.regs[0x36>>1].byte.h, 1);
+  }
 
   return bufferptr;
 }
@@ -114,9 +122,14 @@ int megasd_context_load(uint8 *state)
   int bufferptr = 0;
 
   load_param(&megasd_hw, sizeof(megasd_hw));
-  bufferptr += cdd_context_load(&state[bufferptr], STATE_VERSION);
-  bufferptr += pcm_context_load(&state[bufferptr]);
-  load_param(&scd.regs[0x36>>1].byte.h, 1);
+
+  /* load needed CD hardware state (only if not already loaded) */
+  if (system_hw != SYSTEM_MCD)
+  {
+    bufferptr += cdd_context_load(&state[bufferptr], STATE_VERSION);
+    bufferptr += pcm_context_load(&state[bufferptr]);
+    load_param(&scd.regs[0x36>>1].byte.h, 1);
+  }
 
   return bufferptr;
 }
@@ -335,7 +348,15 @@ void megasd_update_cdda(unsigned int samples)
 
   while (samples > 0)
   {
-    /* attempt to read remaing needed samples by default */
+    /* check if audio playback is paused or stopped */
+    if (scd.regs[0x36>>1].byte.h == 0x01)
+    {
+      /* clear remaining needed CD-DA samples without updating counters */
+      cdd_read_audio(samples);
+      break;
+    }
+
+    /* attempt to read remaining needed samples by default */
     count = samples;
 
     /* check against fade out remaining samples */
@@ -353,7 +374,7 @@ void megasd_update_cdda(unsigned int samples)
     /* read required CD-DA samples */
     cdd_read_audio(count);
 
-    /* adjust remaing needed samples count */
+    /* adjust remaining needed samples count */
     samples -= count;
 
     /* check if fade out is still in progress */

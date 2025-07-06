@@ -64,7 +64,7 @@ void areplay_init(void)
   if (load_archive(AR_ROM, cart.lockrom, 0x10000, NULL) > 0)
   {
     /* detect Action Replay board type */
-    if (!memcmp(cart.lockrom + 0x120, "ACTION REPLAY   ", 16))
+    if (!memcmp(cart.lockrom + 0x120, "ACTION REPLAY   ", 16)) 
     {
       /* normal Action Replay (32KB ROM) */
       action_replay.enabled = TYPE_AR;

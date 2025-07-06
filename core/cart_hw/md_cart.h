@@ -2,7 +2,7 @@
  *  Genesis Plus
  *  Mega Drive cartridge hardware support
  *
- *  Copyright (C) 2007-2021  Eke-Eke (Genesis Plus GX)
+ *  Copyright (C) 2007-2024  Eke-Eke (Genesis Plus GX)
  *
  *  Most cartridge protections were initially documented by Haze
  *  (http://haze.mameworld.info/)
@@ -65,6 +65,7 @@
 #define HW_J_CART   0x04
 #define HW_LOCK_ON  0x08
 #define HW_MEGASD   0x10
+#define HW_PAPRIUM  0x20
 
 /* Cartridge extra hardware */
 typedef struct
@@ -91,6 +92,7 @@ typedef struct
   uint8 lockrom[0x10000]; /* Game Genie / (Pro) Action Replay Lock-On ROM area (max 64KB) */
   uint8 rom[MAXROMSIZE];  /* cartridge ROM area */
 } md_cart_t;
+
 
 /* Function prototypes */
 extern void md_cart_init(void);
