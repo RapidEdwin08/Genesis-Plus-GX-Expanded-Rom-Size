@@ -8,3 +8,4 @@ Place "lr-genesis-plus-gx-EX.sh" to the following directory on your Device
 3.Select "lr-genesis-plus-gx-EX"
 4.Select "Update/Install from source"
 5.Core will then compile and install
+6.Results in x2 Cores Side-by-Side: lr-genesis-plus-gx & lr-genesis-plus-gx-EX (for SegaChannel+P4PR1UM)
