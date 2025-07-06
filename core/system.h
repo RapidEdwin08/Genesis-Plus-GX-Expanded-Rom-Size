@@ -5,7 +5,7 @@
  *  Support for 16-bit & 8-bit hardware modes
  *
  *  Copyright (C) 1998-2003  Charles Mac Donald (original code)
- *  Copyright (C) 2007-2021  Eke-Eke (Genesis Plus GX)
+ *  Copyright (C) 2007-2024  Eke-Eke (Genesis Plus GX)
  *
  *  Redistribution and use of this code or any derivative works are permitted
  *  provided that the following conditions are met:
@@ -45,17 +45,18 @@
 #include "blip_buf.h"
 
 /* Supported hardware models */
-#define SYSTEM_SG         0x10
-#define SYSTEM_SGII       0x11
-#define SYSTEM_MARKIII    0x12
-#define SYSTEM_SMS        0x20
-#define SYSTEM_SMS2       0x21
-#define SYSTEM_GG         0x40
-#define SYSTEM_GGMS       0x41
-#define SYSTEM_MD         0x80
-#define SYSTEM_PBC        0x81
-#define SYSTEM_PICO       0x82
-#define SYSTEM_MCD        0x84
+#define SYSTEM_SG           0x01
+#define SYSTEM_SGII         0x02
+#define SYSTEM_SGII_RAM_EXT 0x03
+#define SYSTEM_MARKIII      0x10
+#define SYSTEM_SMS          0x20
+#define SYSTEM_SMS2         0x21
+#define SYSTEM_GG           0x40
+#define SYSTEM_GGMS         0x41
+#define SYSTEM_MD           0x80
+#define SYSTEM_PBC          0x81
+#define SYSTEM_PICO         0x82
+#define SYSTEM_MCD          0x84
 
 /* NTSC & PAL Master Clock frequencies */
 #define MCLOCK_NTSC 53693175
@@ -65,8 +66,8 @@
 #define MCYCLES_PER_LINE  3420
 
 /* Horizontal timing offsets when running in Z80 mode */
-#define SMS_CYCLE_OFFSET  530 
-#define PBC_CYCLE_OFFSET  560 
+#define SMS_CYCLE_OFFSET  530
+#define PBC_CYCLE_OFFSET  560
 
 typedef struct
 {
@@ -91,9 +92,11 @@ typedef struct
   int sample_rate;      /* Output Sample rate (8000-48000) */
   double frame_rate;    /* Output Frame rate (usually 50 or 60 frames per second) */
   int enabled;          /* 1= sound emulation is enabled */
-  blip_t* blips[3];     /* Blip Buffer resampling (stereo) */
+  blip_t* blips[4];     /* Blip Buffer resampling (stereo) */
+  blip_buffer_state_t *blip_states[4]; /* states for suspending and restoring the sound buffer */
+  int fm_last_save[2];  /* For saving and restoring the sound buffer */
+  int16 cd_last_save[2];  /* For saving and restoring the sound buffer */
 } t_snd;
-
 
 /* Global variables */
 extern t_bitmap bitmap;
@@ -118,4 +121,3 @@ extern void system_frame_scd(int do_skip);
 extern void system_frame_sms(int do_skip);
 
 #endif /* _SYSTEM_H_ */
-
