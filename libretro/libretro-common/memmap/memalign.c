@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (memmap.h).
+ * The following license statement only applies to this file (memalign.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,33 +20,44 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _LIBRETRO_MEMMAP_H
-#define _LIBRETRO_MEMMAP_H
-
-#include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 
-#if defined(PSP) || defined(GEKKO) || defined(VITA) || defined(_XBOX) || defined(_3DS) || defined(WIIU) || defined(SWITCH)
-/* No mman available */
-#elif defined(_WIN32) && !defined(_XBOX)
-#include <windows.h>
-#include <errno.h>
-#include <io.h>
+#include <memalign.h>
+
+void *memalign_alloc(size_t boundary, size_t size)
+{
+   void **place   = NULL;
+   uintptr_t addr = 0;
+   void *ptr      = (void*)malloc(boundary + size + sizeof(uintptr_t));
+   if (!ptr)
+      return NULL;
+
+   addr           = ((uintptr_t)ptr + sizeof(uintptr_t) + boundary)
+      & ~(boundary - 1);
+   place          = (void**)addr;
+   place[-1]      = ptr;
+
+   return (void*)addr;
+}
+
+void memalign_free(void *ptr)
+{
+   void **p = NULL;
+   if (!ptr)
+      return;
+
+   p = (void**)ptr;
+   free(p[-1]);
+}
+
+void *memalign_alloc_aligned(size_t size)
+{
+#if defined(__x86_64__) || defined(__LP64) || defined(__IA64__) || defined(_M_X64) || defined(_M_X64) || defined(_WIN64)
+   return memalign_alloc(64, size);
+#elif defined(__i386__) || defined(__i486__) || defined(__i686__) || defined(GEKKO) || defined(_M_IX86)
+   return memalign_alloc(32, size);
 #else
-#define HAVE_MMAN
-#include <sys/mman.h>
+   return memalign_alloc(32, size);
 #endif
-
-#if !defined(HAVE_MMAN) || defined(_WIN32)
-void* mmap(void *addr, size_t len, int mmap_prot, int mmap_flags, int fildes, size_t off);
-
-int munmap(void *addr, size_t len);
-
-int mprotect(void *addr, size_t len, int prot);
-#endif
-
-int memsync(void *start, void *end);
-
-int memprotect(void *addr, size_t len);
-
-#endif
+}

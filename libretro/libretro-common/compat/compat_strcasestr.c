@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (memmap.h).
+ * The following license statement only applies to this file (compat_strcasestr.c).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,33 +20,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _LIBRETRO_MEMMAP_H
-#define _LIBRETRO_MEMMAP_H
+#include <ctype.h>
 
-#include <stdio.h>
-#include <stdint.h>
+#include <compat/strcasestr.h>
 
-#if defined(PSP) || defined(GEKKO) || defined(VITA) || defined(_XBOX) || defined(_3DS) || defined(WIIU) || defined(SWITCH)
-/* No mman available */
-#elif defined(_WIN32) && !defined(_XBOX)
-#include <windows.h>
-#include <errno.h>
-#include <io.h>
-#else
-#define HAVE_MMAN
-#include <sys/mman.h>
-#endif
+/* Pretty much strncasecmp. */
+static int casencmp(const char *a, const char *b, size_t n)
+{
+   size_t i;
 
-#if !defined(HAVE_MMAN) || defined(_WIN32)
-void* mmap(void *addr, size_t len, int mmap_prot, int mmap_flags, int fildes, size_t off);
+   for (i = 0; i < n; i++)
+   {
+      int a_lower = tolower(a[i]);
+      int b_lower = tolower(b[i]);
+      if (a_lower != b_lower)
+         return a_lower - b_lower;
+   }
 
-int munmap(void *addr, size_t len);
+   return 0;
+}
 
-int mprotect(void *addr, size_t len, int prot);
-#endif
+char *strcasestr_retro__(const char *haystack, const char *needle)
+{
+   size_t i, search_off;
+   size_t hay_len    = strlen(haystack);
+   size_t needle_len = strlen(needle);
 
-int memsync(void *start, void *end);
+   if (needle_len > hay_len)
+      return NULL;
 
-int memprotect(void *addr, size_t len);
+   search_off = hay_len - needle_len;
+   for (i = 0; i <= search_off; i++)
+      if (!casencmp(haystack + i, needle, needle_len))
+         return (char*)haystack + i;
 
-#endif
+   return NULL;
+}

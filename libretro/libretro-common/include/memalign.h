@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (memmap.h).
+ * The following license statement only applies to this file (memalign.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,33 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _LIBRETRO_MEMMAP_H
-#define _LIBRETRO_MEMMAP_H
+#ifndef _LIBRETRO_MEMALIGN_H
+#define _LIBRETRO_MEMALIGN_H
 
-#include <stdio.h>
-#include <stdint.h>
+#include <stddef.h>
 
-#if defined(PSP) || defined(GEKKO) || defined(VITA) || defined(_XBOX) || defined(_3DS) || defined(WIIU) || defined(SWITCH)
-/* No mman available */
-#elif defined(_WIN32) && !defined(_XBOX)
-#include <windows.h>
-#include <errno.h>
-#include <io.h>
-#else
-#define HAVE_MMAN
-#include <sys/mman.h>
-#endif
+#include <retro_common_api.h>
 
-#if !defined(HAVE_MMAN) || defined(_WIN32)
-void* mmap(void *addr, size_t len, int mmap_prot, int mmap_flags, int fildes, size_t off);
+RETRO_BEGIN_DECLS
 
-int munmap(void *addr, size_t len);
+void *memalign_alloc(size_t boundary, size_t size);
 
-int mprotect(void *addr, size_t len, int prot);
-#endif
+void *memalign_alloc_aligned(size_t size);
 
-int memsync(void *start, void *end);
+void memalign_free(void *ptr);
 
-int memprotect(void *addr, size_t len);
+RETRO_END_DECLS
 
 #endif

@@ -1,7 +1,7 @@
-/* Copyright  (C) 2010-2018 The RetroArch team
+/* Copyright  (C) 2010-2019 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (memmap.h).
+ * The following license statement only applies to this file (vfs_implementation_cdrom.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,33 +20,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _LIBRETRO_MEMMAP_H
-#define _LIBRETRO_MEMMAP_H
+#ifndef __LIBRETRO_SDK_VFS_IMPLEMENTATION_CDROM_H
+#define __LIBRETRO_SDK_VFS_IMPLEMENTATION_CDROM_H
 
-#include <stdio.h>
-#include <stdint.h>
+#include <vfs/vfs.h>
+#include <cdrom/cdrom.h>
 
-#if defined(PSP) || defined(GEKKO) || defined(VITA) || defined(_XBOX) || defined(_3DS) || defined(WIIU) || defined(SWITCH)
-/* No mman available */
-#elif defined(_WIN32) && !defined(_XBOX)
-#include <windows.h>
-#include <errno.h>
-#include <io.h>
-#else
-#define HAVE_MMAN
-#include <sys/mman.h>
-#endif
+RETRO_BEGIN_DECLS
 
-#if !defined(HAVE_MMAN) || defined(_WIN32)
-void* mmap(void *addr, size_t len, int mmap_prot, int mmap_flags, int fildes, size_t off);
+int64_t retro_vfs_file_seek_cdrom(libretro_vfs_implementation_file *stream, int64_t offset, int whence);
 
-int munmap(void *addr, size_t len);
+void retro_vfs_file_open_cdrom(
+      libretro_vfs_implementation_file *stream,
+      const char *path, unsigned mode, unsigned hints);
 
-int mprotect(void *addr, size_t len, int prot);
-#endif
+int retro_vfs_file_close_cdrom(libretro_vfs_implementation_file *stream);
 
-int memsync(void *start, void *end);
+int64_t retro_vfs_file_tell_cdrom(libretro_vfs_implementation_file *stream);
 
-int memprotect(void *addr, size_t len);
+int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
+      void *s, uint64_t len);
+
+int retro_vfs_file_error_cdrom(libretro_vfs_implementation_file *stream);
+
+const cdrom_toc_t* retro_vfs_file_get_cdrom_toc(void);
+
+const vfs_cdrom_t* retro_vfs_file_get_cdrom_position(const libretro_vfs_implementation_file *stream);
+
+RETRO_END_DECLS
 
 #endif

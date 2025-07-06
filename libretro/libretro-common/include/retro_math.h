@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (memmap.h).
+ * The following license statement only applies to this file (retro_math.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,33 +20,75 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _LIBRETRO_MEMMAP_H
-#define _LIBRETRO_MEMMAP_H
+#ifndef _LIBRETRO_COMMON_MATH_H
+#define _LIBRETRO_COMMON_MATH_H
 
-#include <stdio.h>
 #include <stdint.h>
 
-#if defined(PSP) || defined(GEKKO) || defined(VITA) || defined(_XBOX) || defined(_3DS) || defined(WIIU) || defined(SWITCH)
-/* No mman available */
-#elif defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32) && !defined(_XBOX)
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <errno.h>
-#include <io.h>
-#else
-#define HAVE_MMAN
-#include <sys/mman.h>
+#elif defined(_WIN32) && defined(_XBOX)
+#include <Xtl.h>
 #endif
 
-#if !defined(HAVE_MMAN) || defined(_WIN32)
-void* mmap(void *addr, size_t len, int mmap_prot, int mmap_flags, int fildes, size_t off);
+#include <limits.h>
 
-int munmap(void *addr, size_t len);
+#ifdef _MSC_VER
+#include <compat/msvc.h>
+#endif
+#include <retro_inline.h>
 
-int mprotect(void *addr, size_t len, int prot);
+#ifndef M_PI
+#if !defined(USE_MATH_DEFINES)
+#define M_PI 3.14159265358979323846264338327
+#endif
 #endif
 
-int memsync(void *start, void *end);
+#ifndef MAX
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
 
-int memprotect(void *addr, size_t len);
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
+/**
+ * next_pow2:
+ * @v         : initial value
+ *
+ * Get next power of 2 value based on  initial value.
+ *
+ * Returns: next power of 2 value (derived from @v).
+ **/
+INLINE uint32_t next_pow2(uint32_t v)
+{
+   v--;
+   v |= v >> 1;
+   v |= v >> 2;
+   v |= v >> 4;
+   v |= v >> 8;
+   v |= v >> 16;
+   v++;
+   return v;
+}
+
+/**
+ * prev_pow2:
+ * @v         : initial value
+ *
+ * Get previous power of 2 value based on initial value.
+ *
+ * Returns: previous power of 2 value (derived from @v).
+ **/
+INLINE uint32_t prev_pow2(uint32_t v)
+{
+   v |= v >> 1;
+   v |= v >> 2;
+   v |= v >> 4;
+   v |= v >> 8;
+   v |= v >> 16;
+   return v - (v >> 1);
+}
 
 #endif

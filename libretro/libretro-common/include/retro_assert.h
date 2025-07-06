@@ -1,7 +1,7 @@
 /* Copyright  (C) 2010-2018 The RetroArch team
  *
  * ---------------------------------------------------------------------------------------
- * The following license statement only applies to this file (memmap.h).
+ * The following license statement only applies to this file (retro_assert.h).
  * ---------------------------------------------------------------------------------------
  *
  * Permission is hereby granted, free of charge,
@@ -20,33 +20,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _LIBRETRO_MEMMAP_H
-#define _LIBRETRO_MEMMAP_H
+#ifndef __RETRO_ASSERT_H
+#define __RETRO_ASSERT_H
 
+#include <assert.h>
+
+#ifdef RARCH_INTERNAL
 #include <stdio.h>
-#include <stdint.h>
-
-#if defined(PSP) || defined(GEKKO) || defined(VITA) || defined(_XBOX) || defined(_3DS) || defined(WIIU) || defined(SWITCH)
-/* No mman available */
-#elif defined(_WIN32) && !defined(_XBOX)
-#include <windows.h>
-#include <errno.h>
-#include <io.h>
+#define retro_assert(cond) do { \
+   if (!(cond)) { printf("Assertion failed at %s:%d.\n", __FILE__, __LINE__); abort(); } \
+} while(0)
 #else
-#define HAVE_MMAN
-#include <sys/mman.h>
+#define retro_assert(cond) assert(cond)
 #endif
-
-#if !defined(HAVE_MMAN) || defined(_WIN32)
-void* mmap(void *addr, size_t len, int mmap_prot, int mmap_flags, int fildes, size_t off);
-
-int munmap(void *addr, size_t len);
-
-int mprotect(void *addr, size_t len, int prot);
-#endif
-
-int memsync(void *start, void *end);
-
-int memprotect(void *addr, size_t len);
 
 #endif
