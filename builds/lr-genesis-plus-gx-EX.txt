@@ -1,0 +1,10 @@
+Source Build Installation (RetroPie-Setup):
+---------------------------------------------------
+Place "lr-genesis-plus-gx-EX.sh" to the following directory on your Device
+"/home/$USER/RetroPie-Setup/scriptmodules/libretrocores"
+
+1.Access setup script (Wifi or Ethernet connection required)
+2.Select "Manage Main Packages"
+3.Select "lr-genesis-plus-gx-EX"
+4.Select "Update/Install from source"
+5.Core will then compile and install
