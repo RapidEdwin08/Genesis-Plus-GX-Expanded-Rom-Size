@@ -8,7 +8,7 @@ INLINE void UseDivuCycles(uint32 dst, uint32 src)
   int i;
 
   /* minimum cycle time */
-  uint mcycles = 38 * MUL;
+  uint mcycles = 76 * MUL;
 
   /* 16-bit divisor */
   src <<= 16;
@@ -27,27 +27,33 @@ INLINE void UseDivuCycles(uint32 dst, uint32 src)
     {
       /* shift dividend and add two cycles */
       dst <<= 1;
-      mcycles += (2 * MUL);
+      mcycles += (4 * MUL);
 
       if (dst >= src)
       {
         /* apply divisor and remove one cycle */
         dst -= src;
-        mcycles -= 1 * MUL;
+        mcycles -= 2 * MUL;
       }
     }
   }
 
-  USE_CYCLES(mcycles << 1);
+  USE_CYCLES(mcycles);
+
+  /* one 68K bus refresh cycle should be skipped if instruction processing time is longer than refresh period (128 CPU cycles on Mega Drive / Genesis) */
+  if (mcycles >= (128*MUL))
+  {
+    m68ki_cpu.refresh_cycles += (128*MUL);
+  }
 }
 
 INLINE void UseDivsCycles(sint32 dst, sint16 src)
 {
   /* minimum cycle time */
-  uint mcycles = 6 * MUL;
+  uint mcycles = 12 * MUL;
 
   /* negative dividend */
-  if (dst < 0) mcycles += 1 * MUL;
+  if (dst < 0) mcycles += 2 * MUL;
 
   if ((abs(dst) >> 16) < abs(src))
   {
@@ -57,30 +63,36 @@ INLINE void UseDivsCycles(sint32 dst, sint16 src)
     uint32 quotient = abs(dst) / abs(src);
 
     /* add default cycle time */
-    mcycles += (55 * MUL);
+    mcycles += (110 * MUL);
 
     /* positive divisor */
     if (src >= 0)
     {
       /* check dividend sign */
-      if (dst >= 0) mcycles -= 1 * MUL;
-      else mcycles += 1 * MUL;
+      if (dst >= 0) mcycles -= 2 * MUL;
+      else mcycles += 2 * MUL;
     }
 
     /* check higher 15-bits of quotient */
     for (i=0; i<15; i++)
     {
       quotient >>= 1;
-      if (!(quotient & 1)) mcycles += 1 * MUL;
+      if (!(quotient & 1)) mcycles += 2 * MUL;
     }
   }
   else
   {
     /* absolute overflow */
-    mcycles += (2 * MUL);
+    mcycles += (4 * MUL);
   }
 
-  USE_CYCLES(mcycles << 1);
+  USE_CYCLES(mcycles);
+  
+  /* one 68K bus refresh cycle should be skipped if instruction processing time is longer than refresh period (128 CPU cycles on Mega Drive / Genesis) */
+  if (mcycles >= (128*MUL))
+  {
+    m68ki_cpu.refresh_cycles += (128*MUL);
+  }
 }
 
 INLINE void UseMuluCycles(uint16 src)
@@ -1868,6 +1880,9 @@ static void m68k_op_addq_8_d(void)
   FLAG_Z = MASK_OUT_ABOVE_8(res);
 
   *r_dst = MASK_OUT_BELOW_8(*r_dst) | FLAG_Z;
+
+  /* reset idle loop detection (fixes cases where instruction is used in tight counter incrementing loop) */
+  m68ki_cpu.poll.detected = 0;
 }
 
 
@@ -2028,6 +2043,9 @@ static void m68k_op_addq_16_d(void)
   FLAG_Z = MASK_OUT_ABOVE_16(res);
 
   *r_dst = MASK_OUT_BELOW_16(*r_dst) | FLAG_Z;
+
+  /* reset idle loop detection (fixes cases where instruction is used in tight counter incrementing loop) */
+  m68ki_cpu.poll.detected = 0;
 }
 
 
@@ -2164,6 +2182,9 @@ static void m68k_op_addq_32_d(void)
   FLAG_Z = MASK_OUT_ABOVE_32(res);
 
   *r_dst = FLAG_Z;
+
+  /* reset idle loop detection (fixes cases where instruction is used in tight counter incrementing loop) */
+  m68ki_cpu.poll.detected = 0;
 }
 
 
@@ -3952,7 +3973,7 @@ static void m68k_op_asl_8_r(void)
     }
 
     *r_dst &= 0xffffff00;
-    FLAG_X = FLAG_C = ((shift == 8 ? src & 1 : 0))<<8;
+    FLAG_X = FLAG_C = (((shift == 8) ? src & 1 : 0))<<8;
     FLAG_N = NFLAG_CLEAR;
     FLAG_Z = ZFLAG_SET;
     FLAG_V = (!(src == 0))<<7;
@@ -3989,7 +4010,7 @@ static void m68k_op_asl_16_r(void)
     }
 
     *r_dst &= 0xffff0000;
-    FLAG_X = FLAG_C = ((shift == 16 ? src & 1 : 0))<<8;
+    FLAG_X = FLAG_C = (((shift == 16) ? src & 1 : 0))<<8;
     FLAG_N = NFLAG_CLEAR;
     FLAG_Z = ZFLAG_SET;
     FLAG_V = (!(src == 0))<<7;
@@ -4026,7 +4047,7 @@ static void m68k_op_asl_32_r(void)
     }
 
     *r_dst = 0;
-    FLAG_X = FLAG_C = ((shift == 32 ? src & 1 : 0))<<8;
+    FLAG_X = FLAG_C = (((shift == 32) ? src & 1 : 0))<<8;
     FLAG_N = NFLAG_CLEAR;
     FLAG_Z = ZFLAG_SET;
     FLAG_V = (!(src == 0))<<7;
@@ -4661,6 +4682,11 @@ static void m68k_op_bchg_32_r_d(void)
   uint* r_dst = &DY;
   uint mask = 1 << (DX & 0x1f);
 
+  if (mask & 0xffff0000)
+  {
+    USE_CYCLES(2 * MUL);
+  }
+
   FLAG_Z = *r_dst & mask;
   *r_dst ^= mask;
 }
@@ -4769,6 +4795,11 @@ static void m68k_op_bchg_32_s_d(void)
 {
   uint* r_dst = &DY;
   uint mask = 1 << (OPER_I_8() & 0x1f);
+
+  if (mask & 0xffff0000)
+  {
+    USE_CYCLES(2 * MUL);
+  }
 
   FLAG_Z = *r_dst & mask;
   *r_dst ^= mask;
@@ -4879,6 +4910,11 @@ static void m68k_op_bclr_32_r_d(void)
   uint* r_dst = &DY;
   uint mask = 1 << (DX & 0x1f);
 
+  if (mask & 0xffff0000)
+  {
+    USE_CYCLES(2 * MUL);
+  }
+
   FLAG_Z = *r_dst & mask;
   *r_dst &= ~mask;
 }
@@ -4987,6 +5023,11 @@ static void m68k_op_bclr_32_s_d(void)
 {
   uint* r_dst = &DY;
   uint mask = 1 << (OPER_I_8() & 0x1f);
+
+  if (mask & 0xffff0000)
+  {
+    USE_CYCLES(2 * MUL);
+  }
 
   FLAG_Z = *r_dst & mask;
   *r_dst &= ~mask;
@@ -5117,6 +5158,11 @@ static void m68k_op_bset_32_r_d(void)
   uint* r_dst = &DY;
   uint mask = 1 << (DX & 0x1f);
 
+  if (mask & 0xffff0000)
+  {
+    USE_CYCLES(2 * MUL);
+  }
+
   FLAG_Z = *r_dst & mask;
   *r_dst |= mask;
 }
@@ -5225,6 +5271,11 @@ static void m68k_op_bset_32_s_d(void)
 {
   uint* r_dst = &DY;
   uint mask = 1 << (OPER_I_8() & 0x1f);
+
+  if (mask & 0xffff0000)
+  {
+    USE_CYCLES(2 * MUL);
+  }
 
   FLAG_Z = *r_dst & mask;
   *r_dst |= mask;
@@ -5536,9 +5587,14 @@ static void m68k_op_chk_16_d(void)
 
   if(src >= 0 && src <= bound)
   {
+    USE_CYCLES(10 * MUL);
     return;
   }
-  FLAG_N = (src < 0)<<7;
+  if(src < 0)
+  {
+    FLAG_N = 1<<7;
+    USE_CYCLES(2 * MUL);
+  }
   m68ki_exception_trap(EXCEPTION_CHK);
 }
 
@@ -5554,9 +5610,14 @@ static void m68k_op_chk_16_ai(void)
 
   if(src >= 0 && src <= bound)
   {
+    USE_CYCLES(10 * MUL);
     return;
   }
-  FLAG_N = (src < 0)<<7;
+  if(src < 0)
+  {
+    FLAG_N = 1<<7;
+    USE_CYCLES(2 * MUL);
+  }
   m68ki_exception_trap(EXCEPTION_CHK);
 }
 
@@ -5572,9 +5633,14 @@ static void m68k_op_chk_16_pi(void)
 
   if(src >= 0 && src <= bound)
   {
+    USE_CYCLES(10 * MUL);
     return;
   }
-  FLAG_N = (src < 0)<<7;
+  if(src < 0)
+  {
+    FLAG_N = 1<<7;
+    USE_CYCLES(2 * MUL);
+  }
   m68ki_exception_trap(EXCEPTION_CHK);
 }
 
@@ -5590,9 +5656,14 @@ static void m68k_op_chk_16_pd(void)
 
   if(src >= 0 && src <= bound)
   {
+    USE_CYCLES(10 * MUL);
     return;
   }
-  FLAG_N = (src < 0)<<7;
+  if(src < 0)
+  {
+    FLAG_N = 1<<7;
+    USE_CYCLES(2 * MUL);
+  }
   m68ki_exception_trap(EXCEPTION_CHK);
 }
 
@@ -5608,9 +5679,14 @@ static void m68k_op_chk_16_di(void)
 
   if(src >= 0 && src <= bound)
   {
+    USE_CYCLES(10 * MUL);
     return;
   }
-  FLAG_N = (src < 0)<<7;
+  if(src < 0)
+  {
+    FLAG_N = 1<<7;
+    USE_CYCLES(2 * MUL);
+  }
   m68ki_exception_trap(EXCEPTION_CHK);
 }
 
@@ -5626,9 +5702,14 @@ static void m68k_op_chk_16_ix(void)
 
   if(src >= 0 && src <= bound)
   {
+    USE_CYCLES(10 * MUL);
     return;
   }
-  FLAG_N = (src < 0)<<7;
+  if(src < 0)
+  {
+    FLAG_N = 1<<7;
+    USE_CYCLES(2 * MUL);
+  }
   m68ki_exception_trap(EXCEPTION_CHK);
 }
 
@@ -5644,9 +5725,14 @@ static void m68k_op_chk_16_aw(void)
 
   if(src >= 0 && src <= bound)
   {
+    USE_CYCLES(10 * MUL);
     return;
   }
-  FLAG_N = (src < 0)<<7;
+  if(src < 0)
+  {
+    FLAG_N = 1<<7;
+    USE_CYCLES(2 * MUL);
+  }
   m68ki_exception_trap(EXCEPTION_CHK);
 }
 
@@ -5662,9 +5748,14 @@ static void m68k_op_chk_16_al(void)
 
   if(src >= 0 && src <= bound)
   {
+    USE_CYCLES(10 * MUL);
     return;
   }
-  FLAG_N = (src < 0)<<7;
+  if(src < 0)
+  {
+    FLAG_N = 1<<7;
+    USE_CYCLES(2 * MUL);
+  }
   m68ki_exception_trap(EXCEPTION_CHK);
 }
 
@@ -5680,9 +5771,14 @@ static void m68k_op_chk_16_pcdi(void)
 
   if(src >= 0 && src <= bound)
   {
+    USE_CYCLES(10 * MUL);
     return;
   }
-  FLAG_N = (src < 0)<<7;
+  if(src < 0)
+  {
+    FLAG_N = 1<<7;
+    USE_CYCLES(2 * MUL);
+  }
   m68ki_exception_trap(EXCEPTION_CHK);
 }
 
@@ -5698,9 +5794,14 @@ static void m68k_op_chk_16_pcix(void)
 
   if(src >= 0 && src <= bound)
   {
+    USE_CYCLES(10 * MUL);
     return;
   }
-  FLAG_N = (src < 0)<<7;
+  if(src < 0)
+  {
+    FLAG_N = 1<<7;
+    USE_CYCLES(2 * MUL);
+  }
   m68ki_exception_trap(EXCEPTION_CHK);
 }
 
@@ -5716,9 +5817,14 @@ static void m68k_op_chk_16_i(void)
 
   if(src >= 0 && src <= bound)
   {
+    USE_CYCLES(10 * MUL);
     return;
   }
-  FLAG_N = (src < 0)<<7;
+  if(src < 0)
+  {
+    FLAG_N = 1<<7;
+    USE_CYCLES(2 * MUL);
+  }
   m68ki_exception_trap(EXCEPTION_CHK);
 }
 
@@ -9562,7 +9668,7 @@ static void m68k_op_lsr_32_r(void)
     }
 
     *r_dst = 0;
-    FLAG_X = FLAG_C = (shift == 32 ? GET_MSB_32(src)>>23 : 0);
+    FLAG_X = FLAG_C = ((shift == 32) ? GET_MSB_32(src)>>23 : 0);
     FLAG_N = NFLAG_CLEAR;
     FLAG_Z = ZFLAG_SET;
     FLAG_V = VFLAG_CLEAR;
@@ -9834,7 +9940,7 @@ static void m68k_op_lsl_32_r(void)
     }
 
     *r_dst = 0;
-    FLAG_X = FLAG_C = ((shift == 32 ? src & 1 : 0))<<8;
+    FLAG_X = FLAG_C = (((shift == 32) ? src & 1 : 0))<<8;
     FLAG_N = NFLAG_CLEAR;
     FLAG_Z = ZFLAG_SET;
     FLAG_V = VFLAG_CLEAR;
@@ -15137,6 +15243,9 @@ static void m68k_op_movem_16_er_pi(void)
     }
   AY = ea;
 
+  /* MOVEM extra read cycle (can have side effect if target hardware is impacted by read access) */
+  m68ki_read_16(ea);
+
   USE_CYCLES(count * CYC_MOVEM_W);
 }
 
@@ -15155,6 +15264,9 @@ static void m68k_op_movem_16_er_pcdi(void)
       ea += 2;
       count++;
     }
+
+  /* MOVEM extra read cycle (can have side effect if target hardware is impacted by read access) */
+  m68ki_read_16(ea);
 
   USE_CYCLES(count * CYC_MOVEM_W);
 }
@@ -15175,6 +15287,9 @@ static void m68k_op_movem_16_er_pcix(void)
       count++;
     }
 
+  /* MOVEM extra read cycle (can have side effect if extra address is not mapped or mapped to hardware impacted by read access) */
+  m68ki_read_16(ea);
+
   USE_CYCLES(count * CYC_MOVEM_W);
 }
 
@@ -15193,6 +15308,9 @@ static void m68k_op_movem_16_er_ai(void)
       ea += 2;
       count++;
     }
+
+  /* MOVEM extra read cycle (can have side effect if extra address is not mapped or mapped to hardware impacted by read access) */
+  m68ki_read_16(ea);
 
   USE_CYCLES(count * CYC_MOVEM_W);
 }
@@ -15213,6 +15331,9 @@ static void m68k_op_movem_16_er_di(void)
       count++;
     }
 
+  /* MOVEM extra read cycle (can have side effect if extra address is not mapped or mapped to hardware impacted by read access) */
+  m68ki_read_16(ea);
+
   USE_CYCLES(count * CYC_MOVEM_W);
 }
 
@@ -15231,6 +15352,9 @@ static void m68k_op_movem_16_er_ix(void)
       ea += 2;
       count++;
     }
+
+  /* MOVEM extra read cycle (can have side effect if extra address is not mapped or mapped to hardware impacted by read access) */
+  m68ki_read_16(ea);
 
   USE_CYCLES(count * CYC_MOVEM_W);
 }
@@ -15251,6 +15375,9 @@ static void m68k_op_movem_16_er_aw(void)
       count++;
     }
 
+  /* MOVEM extra read cycle (can have side effect if extra address is not mapped or mapped to hardware impacted by read access) */
+  m68ki_read_16(ea);
+
   USE_CYCLES(count * CYC_MOVEM_W);
 }
 
@@ -15269,6 +15396,9 @@ static void m68k_op_movem_16_er_al(void)
       ea += 2;
       count++;
     }
+
+  /* MOVEM extra read cycle (can have side effect if extra address is not mapped or mapped to hardware impacted by read access) */
+  m68ki_read_16(ea);
 
   USE_CYCLES(count * CYC_MOVEM_W);
 }
@@ -15290,6 +15420,9 @@ static void m68k_op_movem_32_er_pi(void)
     }
   AY = ea;
 
+  /* MOVEM extra read cycle (can have side effect if extra address is not mapped or mapped to hardware impacted by read access) */
+  m68ki_read_16(ea);
+
   USE_CYCLES(count * CYC_MOVEM_L);
 }
 
@@ -15308,6 +15441,9 @@ static void m68k_op_movem_32_er_pcdi(void)
       ea += 4;
       count++;
     }
+
+  /* MOVEM extra read cycle (can have side effect if extra address is not mapped or mapped to hardware impacted by read access) */
+  m68ki_read_16(ea);
 
   USE_CYCLES(count * CYC_MOVEM_L);
 }
@@ -15328,6 +15464,9 @@ static void m68k_op_movem_32_er_pcix(void)
       count++;
     }
 
+  /* MOVEM extra read cycle (can have side effect if extra address is not mapped or mapped to hardware impacted by read access) */
+  m68ki_read_16(ea);
+
   USE_CYCLES(count * CYC_MOVEM_L);
 }
 
@@ -15346,6 +15485,9 @@ static void m68k_op_movem_32_er_ai(void)
       ea += 4;
       count++;
     }
+
+  /* MOVEM extra read cycle (can have side effect if extra address is not mapped or mapped to hardware impacted by read access) */
+  m68ki_read_16(ea);
 
   USE_CYCLES(count * CYC_MOVEM_L);
 }
@@ -15366,6 +15508,9 @@ static void m68k_op_movem_32_er_di(void)
       count++;
     }
 
+  /* MOVEM extra read cycle (can have side effect if extra address is not mapped or mapped to hardware impacted by read access) */
+  m68ki_read_16(ea);
+
   USE_CYCLES(count * CYC_MOVEM_L);
 }
 
@@ -15384,6 +15529,9 @@ static void m68k_op_movem_32_er_ix(void)
       ea += 4;
       count++;
     }
+
+  /* MOVEM extra read cycle (can have side effect if extra address is not mapped or mapped to hardware impacted by read access) */
+  m68ki_read_16(ea);
 
   USE_CYCLES(count * CYC_MOVEM_L);
 }
@@ -15404,6 +15552,9 @@ static void m68k_op_movem_32_er_aw(void)
       count++;
     }
 
+  /* MOVEM extra read cycle (can have side effect if extra address is not mapped or mapped to hardware impacted by read access) */
+  m68ki_read_16(ea);
+
   USE_CYCLES(count * CYC_MOVEM_L);
 }
 
@@ -15422,6 +15573,9 @@ static void m68k_op_movem_32_er_al(void)
       ea += 4;
       count++;
     }
+
+  /* MOVEM extra read cycle (can have side effect if extra address is not mapped or mapped to hardware impacted by read access) */
+  m68ki_read_16(ea);
 
   USE_CYCLES(count * CYC_MOVEM_L);
 }
@@ -18550,6 +18704,7 @@ static void m68k_op_reset(void)
   {
     m68ki_output_reset()       /* auto-disable (see m68kcpu.h) */
     USE_CYCLES(CYC_RESET);
+    m68ki_cpu.refresh_cycles += (128*MUL); /* skip one 68K bus refresh cycle as instruction processing time is longer than refresh period (128 CPU cycles on Mega Drive / Genesis) */
     return;
   }
   m68ki_exception_privilege_violation();
@@ -23358,6 +23513,7 @@ static void m68k_op_trapv(void)
 {
   if(COND_VC())
   {
+    USE_CYCLES (4 * MUL);
     return;
   }
   m68ki_exception_trap(EXCEPTION_TRAPV);  /* HJB 990403 */
@@ -23717,21 +23873,21 @@ static const opcode_handler_struct m68k_opcode_handler_table[] =
   {m68k_op_btst_8_r_pd         , 0xf1f8, 0x0120, 10},
   {m68k_op_btst_8_r_di         , 0xf1f8, 0x0128, 12},
   {m68k_op_btst_8_r_ix         , 0xf1f8, 0x0130, 14},
-  {m68k_op_bchg_32_r_d         , 0xf1f8, 0x0140,  8},
+  {m68k_op_bchg_32_r_d         , 0xf1f8, 0x0140,  6},
   {m68k_op_movep_32_er         , 0xf1f8, 0x0148, 24},
   {m68k_op_bchg_8_r_ai         , 0xf1f8, 0x0150, 12},
   {m68k_op_bchg_8_r_pi         , 0xf1f8, 0x0158, 12},
   {m68k_op_bchg_8_r_pd         , 0xf1f8, 0x0160, 14},
   {m68k_op_bchg_8_r_di         , 0xf1f8, 0x0168, 16},
   {m68k_op_bchg_8_r_ix         , 0xf1f8, 0x0170, 18},
-  {m68k_op_bclr_32_r_d         , 0xf1f8, 0x0180, 10},
+  {m68k_op_bclr_32_r_d         , 0xf1f8, 0x0180,  8},
   {m68k_op_movep_16_re         , 0xf1f8, 0x0188, 16},
   {m68k_op_bclr_8_r_ai         , 0xf1f8, 0x0190, 12},
   {m68k_op_bclr_8_r_pi         , 0xf1f8, 0x0198, 12},
   {m68k_op_bclr_8_r_pd         , 0xf1f8, 0x01a0, 14},
   {m68k_op_bclr_8_r_di         , 0xf1f8, 0x01a8, 16},
   {m68k_op_bclr_8_r_ix         , 0xf1f8, 0x01b0, 18},
-  {m68k_op_bset_32_r_d         , 0xf1f8, 0x01c0,  8},
+  {m68k_op_bset_32_r_d         , 0xf1f8, 0x01c0,  6},
   {m68k_op_movep_32_re         , 0xf1f8, 0x01c8, 24},
   {m68k_op_bset_8_r_ai         , 0xf1f8, 0x01d0, 12},
   {m68k_op_bset_8_r_pi         , 0xf1f8, 0x01d8, 12},
@@ -23872,12 +24028,12 @@ static const opcode_handler_struct m68k_opcode_handler_table[] =
   {m68k_op_move_16_ix_pd       , 0xf1f8, 0x31a0, 20},
   {m68k_op_move_16_ix_di       , 0xf1f8, 0x31a8, 22},
   {m68k_op_move_16_ix_ix       , 0xf1f8, 0x31b0, 24},
-  {m68k_op_chk_16_d            , 0xf1f8, 0x4180, 10},
-  {m68k_op_chk_16_ai           , 0xf1f8, 0x4190, 14},
-  {m68k_op_chk_16_pi           , 0xf1f8, 0x4198, 14},
-  {m68k_op_chk_16_pd           , 0xf1f8, 0x41a0, 16},
-  {m68k_op_chk_16_di           , 0xf1f8, 0x41a8, 18},
-  {m68k_op_chk_16_ix           , 0xf1f8, 0x41b0, 20},
+  {m68k_op_chk_16_d            , 0xf1f8, 0x4180,  0},
+  {m68k_op_chk_16_ai           , 0xf1f8, 0x4190,  4},
+  {m68k_op_chk_16_pi           , 0xf1f8, 0x4198,  4},
+  {m68k_op_chk_16_pd           , 0xf1f8, 0x41a0,  6},
+  {m68k_op_chk_16_di           , 0xf1f8, 0x41a8,  8},
+  {m68k_op_chk_16_ix           , 0xf1f8, 0x41b0, 10},
   {m68k_op_lea_32_ai           , 0xf1f8, 0x41d0,  4},
   {m68k_op_lea_32_di           , 0xf1f8, 0x41e8,  8},
   {m68k_op_lea_32_ix           , 0xf1f8, 0x41f0, 12},
@@ -24231,7 +24387,7 @@ static const opcode_handler_struct m68k_opcode_handler_table[] =
   {m68k_op_lsl_32_r            , 0xf1f8, 0xe1a8,  8},
   {m68k_op_roxl_32_r           , 0xf1f8, 0xe1b0,  8},
   {m68k_op_rol_32_r            , 0xf1f8, 0xe1b8,  8},
-  {m68k_op_trap                , 0xfff0, 0x4e40,  4},
+  {m68k_op_trap                , 0xfff0, 0x4e40,  0},
   {m68k_op_btst_8_r_pi7        , 0xf1ff, 0x011f,  8},
   {m68k_op_btst_8_r_pd7        , 0xf1ff, 0x0127, 10},
   {m68k_op_btst_8_r_aw         , 0xf1ff, 0x0138, 12},
@@ -24363,11 +24519,11 @@ static const opcode_handler_struct m68k_opcode_handler_table[] =
   {m68k_op_move_16_ix_pcdi     , 0xf1ff, 0x31ba, 22},
   {m68k_op_move_16_ix_pcix     , 0xf1ff, 0x31bb, 24},
   {m68k_op_move_16_ix_i        , 0xf1ff, 0x31bc, 18},
-  {m68k_op_chk_16_aw           , 0xf1ff, 0x41b8, 18},
-  {m68k_op_chk_16_al           , 0xf1ff, 0x41b9, 22},
-  {m68k_op_chk_16_pcdi         , 0xf1ff, 0x41ba, 18},
-  {m68k_op_chk_16_pcix         , 0xf1ff, 0x41bb, 20},
-  {m68k_op_chk_16_i            , 0xf1ff, 0x41bc, 14},
+  {m68k_op_chk_16_aw           , 0xf1ff, 0x41b8,  8},
+  {m68k_op_chk_16_al           , 0xf1ff, 0x41b9, 12},
+  {m68k_op_chk_16_pcdi         , 0xf1ff, 0x41ba,  8},
+  {m68k_op_chk_16_pcix         , 0xf1ff, 0x41bb, 10},
+  {m68k_op_chk_16_i            , 0xf1ff, 0x41bc,  4},
   {m68k_op_lea_32_aw           , 0xf1ff, 0x41f8,  8},
   {m68k_op_lea_32_al           , 0xf1ff, 0x41f9, 12},
   {m68k_op_lea_32_pcdi         , 0xf1ff, 0x41fa,  8},
@@ -24646,19 +24802,19 @@ static const opcode_handler_struct m68k_opcode_handler_table[] =
   {m68k_op_btst_8_s_pd         , 0xfff8, 0x0820, 14},
   {m68k_op_btst_8_s_di         , 0xfff8, 0x0828, 16},
   {m68k_op_btst_8_s_ix         , 0xfff8, 0x0830, 18},
-  {m68k_op_bchg_32_s_d         , 0xfff8, 0x0840, 12},
+  {m68k_op_bchg_32_s_d         , 0xfff8, 0x0840, 10},
   {m68k_op_bchg_8_s_ai         , 0xfff8, 0x0850, 16},
   {m68k_op_bchg_8_s_pi         , 0xfff8, 0x0858, 16},
   {m68k_op_bchg_8_s_pd         , 0xfff8, 0x0860, 18},
   {m68k_op_bchg_8_s_di         , 0xfff8, 0x0868, 20},
   {m68k_op_bchg_8_s_ix         , 0xfff8, 0x0870, 22},
-  {m68k_op_bclr_32_s_d         , 0xfff8, 0x0880, 14},
+  {m68k_op_bclr_32_s_d         , 0xfff8, 0x0880, 12},
   {m68k_op_bclr_8_s_ai         , 0xfff8, 0x0890, 16},
   {m68k_op_bclr_8_s_pi         , 0xfff8, 0x0898, 16},
   {m68k_op_bclr_8_s_pd         , 0xfff8, 0x08a0, 18},
   {m68k_op_bclr_8_s_di         , 0xfff8, 0x08a8, 20},
   {m68k_op_bclr_8_s_ix         , 0xfff8, 0x08b0, 22},
-  {m68k_op_bset_32_s_d         , 0xfff8, 0x08c0, 12},
+  {m68k_op_bset_32_s_d         , 0xfff8, 0x08c0, 10},
   {m68k_op_bset_8_s_ai         , 0xfff8, 0x08d0, 16},
   {m68k_op_bset_8_s_pi         , 0xfff8, 0x08d8, 16},
   {m68k_op_bset_8_s_pd         , 0xfff8, 0x08e0, 18},
@@ -25265,7 +25421,7 @@ static const opcode_handler_struct m68k_opcode_handler_table[] =
   {m68k_op_stop                , 0xffff, 0x4e72,  4},
   {m68k_op_rte_32              , 0xffff, 0x4e73, 20},
   {m68k_op_rts_32              , 0xffff, 0x4e75, 16},
-  {m68k_op_trapv               , 0xffff, 0x4e76,  4},
+  {m68k_op_trapv               , 0xffff, 0x4e76,  0},
   {m68k_op_rtr_32              , 0xffff, 0x4e77, 20},
   {m68k_op_jsr_32_aw           , 0xffff, 0x4eb8, 18},
   {m68k_op_jsr_32_al           , 0xffff, 0x4eb9, 20},
