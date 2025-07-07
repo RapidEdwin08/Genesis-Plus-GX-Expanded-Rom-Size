@@ -1,3 +1,5 @@
+*** EXRomSize Support for SegaChannel + P4PR1UM Compatibility ***
+
 Binary Build Installation (Manual Install):
 ---------------------------------------------------
 Place Entire folder "lr-genesis-plus-gx-EX" to the following directory on your Device
