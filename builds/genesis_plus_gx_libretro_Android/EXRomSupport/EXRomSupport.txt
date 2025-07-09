@@ -10,7 +10,7 @@ Emulator Instalation:
 
 *Select genesis_plus_gx_libretro_android.so in the folder you placed it in.
 
-*Enjoy Sega Channel Revival!!
+*Enjoy P4PR1UM
 
 *Extra: Be sure to map a reset key on your controller if you wish to quickly switch games.
 
