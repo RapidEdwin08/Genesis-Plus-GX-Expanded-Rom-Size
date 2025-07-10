@@ -1,0 +1,2 @@
+*** NO EXRomSize Support for SegaChannel *** (ONLY P4PR1UM Compatibility)
+retroarch(1.21.0)
