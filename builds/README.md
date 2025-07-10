@@ -1,8 +1,7 @@
 # Genesis-Plus-GX [Builds]  
-![MainMenu.png](https://bitbucket.org/repo/7AjE6M/images/3565283297-MainMenu.png)
-![menu_load.png](https://bitbucket.org/repo/7AjE6M/images/164055790-menu_load.png)  
+![MainMenu.png](https://bitbucket.org/repo/7AjE6M/images/3565283297-MainMenu.png)  
 
-## Pre-Compiled Community Genesis-Plus-GX [Builds]:  
+## Pre-Compiled Community [Builds]:  
 **P4PR1UM:** *NO EXRomSize Support for SegaChannel (ONLY P4PR1UM Compatibility)*  
 **EXOnly:** *EXRomSize Support for SegaChannel ONLY (NO P4PR1UM Compatibility)*  
 **Both:** *EXRomSize Support for SegaChannel + P4PR1UM Compatibility*  
@@ -29,7 +28,7 @@ Open Retroarch -> Settings -> Cores -> Manage Cores -> ***Install or Restore a C
 Navigate to the *[genesis_plus_gx_libretro.dll]* or *[genesis_plus_gx_libretro.so]* you Copied to your Device  
 
 ## [Build] Install Manually for RetroPie:  
-Copy Entire ***[lr-genesis-plus-gx-EX]*** Folder to [/opt/retropie/libretrocores] on your Device:  
+Copy the Entire ***[lr-genesis-plus-gx-EX]*** Folder to [/opt/retropie/libretrocores] on your Device:  
 ```bash
 sudo cp -R ./lr-genesis-plus-gx-EX /opt/retropie/libretrocores
 
@@ -39,10 +38,11 @@ Set the Core File Permissions for Executable
 sudo chmod 755 /opt/retropie/libretrocores/genesis_plus_gx_libretro.so
 
 ```
-Add Line for additional Emulator ***[lr-genesis-plus-gx-EX]*** to emulators.cfg  
+Edit the *megadrive* Emulator Config file  
 ```bash
 nano /opt/retropie/configs/megadrive/emulators.cfg
 ```
+Add the Line for the additional Emulator ***[lr-genesis-plus-gx-EX]*** to emulators.cfg  
 ```bash
 lr-genesis-plus-gx-EX = "/opt/retropie/emulators/retroarch/bin/retroarch -L /opt/retropie/libretrocores/lr-genesis-plus-gx-EX/genesis_plus_gx_libretro.so --config /opt/retropie/configs/megadrive/retroarch.cfg %ROM%"
 ```
