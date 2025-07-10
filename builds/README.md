@@ -2,7 +2,7 @@
 ![MainMenu.png](https://bitbucket.org/repo/7AjE6M/images/3565283297-MainMenu.png)
 ![menu_load.png](https://bitbucket.org/repo/7AjE6M/images/164055790-menu_load.png)  
 
-## Pre-Compiled Community Genesis-Plus-GX [Builds] for Various Devices:  
+## Pre-Compiled Community Genesis-Plus-GX [Builds]:  
 **P4PR1UM:** *NO EXRomSize Support for SegaChannel (ONLY P4PR1UM Compatibility)*  
 **EXOnly:** *EXRomSize Support for SegaChannel ONLY (NO P4PR1UM Compatibility)*  
 **Both:** *EXRomSize Support for SegaChannel + P4PR1UM Compatibility*  
