@@ -1,0 +1,1 @@
+*** EXRomSize Support for SegaChannel ONLY *** (NO P4PR1UM Compatibility)
