@@ -13,10 +13,12 @@
 Get the [lr-genesis-plus-gx-EX.sh] Script and place in [/home/$USER/RetroPie-Setup/scriptmodules/libretrocores]  
 ```bash
 wget https://raw.githubusercontent.com/RapidEdwin08/Genesis-Plus-GX-Expanded-Rom-Size/master/builds/lr-genesis-plus-gx-EX.sh -P ~/RetroPie-Setup/scriptmodules/libretrocores/
+
 ```
 Open RetroPie-Setup from Emulationstation or CLI  
 ```bash
 cd ~/RetroPie-Setup && sudo ./retropie_setup.sh; cd ~
+
 ```
 From RetroPie Setup -> Manage Packages -> Manage *Experimental* Packages  
 Locate **[lr-genesis-plus-gx-EX]** in the List -> Update/Install from Source  
@@ -41,8 +43,42 @@ sudo chmod 755 /opt/retropie/libretrocores/genesis_plus_gx_libretro.so
 Edit the *megadrive* Emulator Config file  
 ```bash
 nano /opt/retropie/configs/megadrive/emulators.cfg
+
 ```
 Add the Line for the additional Emulator ***[lr-genesis-plus-gx-EX]*** to emulators.cfg  
 ```bash
 lr-genesis-plus-gx-EX = "/opt/retropie/emulators/retroarch/bin/retroarch -L /opt/retropie/libretrocores/lr-genesis-plus-gx-EX/genesis_plus_gx_libretro.so --config /opt/retropie/configs/megadrive/retroarch.cfg %ROM%"
+```
+
+## [Source] Generic Device Build:  
+*Clean out any 0ld Source Folder prior if applicable*  
+```bash
+cd ~
+rm -Rf ~/Genesis-Plus-GX-Expanded-Rom-Size
+
+```
+Get the [Genesis-Plus-GX-Expanded-Rom-Size] *Source* on your Device  
+```bash
+cd ~
+git clone --depth=1 https://github.com/RapidEdwin08/Genesis-Plus-GX-Expanded-Rom-Size.git
+
+```
+Navigate to the *Source* folder Downloaded and *make*  
+The Makefile should Auto-Detect *Device* and Build appropriate *Core*  
+Successful Build should ouptut **[genesis_plus_gx_libretro.so]**  
+```bash
+cd ~/Genesis-Plus-GX-Expanded-Rom-Size
+make -f Makefile.libretro clean
+make -f Makefile.libretro
+
+```
+## [Source] Specific Platform Build:  
+GIT <> CODE Dowload ZIP and Extract *[Genesis-Plus-GX-Expanded-Rom-Size-master]* *Source* Folder on *Device*  
+Specify the [platform= ] +parameters for *Device* and Build appropriate *Core*  
+Successful Build should ouptut **[genesis_plus_gx_libretro.dll]** in this Example  
+```bash
+cd /d C:\temp\Genesis-Plus-GX-Expanded-Rom-Size-master
+make -f Makefile.libretro platform=win CC=x86_64-w64-mingw-gcc CXX=x86_64_w64-mingw-g++ clean
+make -f Makefile.libretro platform=win CC=x86_64-w64-mingw-gcc CXX=x86_64_w64-mingw-g++
+
 ```
