@@ -125,9 +125,15 @@ function rpSwap() {
     esac
 }
 
+# Calculate current [__memory_avail], compare to required [swap_mb], Only Create [swapfile] IF needed
 conf_memory_vars
 rpSwap on \$swap_mb
+
+# Command to run [genesis_plus_gx_libretro.so]
+# /opt/retropie/emulators/retroarch/bin/retroarch -L /opt/retropie/libretrocores/lr-genesis-plus-gx-EX/genesis_plus_gx_libretro.so --config /opt/retropie/configs/megadrive/retroarch.cfg /home/pi/RetroPie/roms/megadrive/Paprium.7z --appendconfig /dev/shm/retroarch.cfg
 /opt/retropie/emulators/retroarch/bin/retroarch -L $md_inst/genesis_plus_gx_libretro.so --config /opt/retropie/configs/megadrive/retroarch.cfg "\$@"
+
+# Turn Off and Remove [swapfile] IF needed
 rpSwap off
 _EOF_
     chmod 755 "$md_inst/ex-swap.sh"
