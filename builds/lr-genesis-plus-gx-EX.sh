@@ -17,7 +17,7 @@ if [[ -z "$__user" ]]; then __user="$SUDO_USER"; [[ -z "$__user" ]] && __user="$
 
 rp_module_id="lr-genesis-plus-gx-EX"
 rp_module_desc="Fork of lr-genesis-plus-gx + Expanded Rom Size Support"
-rp_module_help="ROM Extensions: .bin .cue .gen .gg .iso .md .sg .smd .sms .zip\nCopy your Game Gear roms to $romdir/gamegear\nMasterSystem roms to $romdir/mastersystem\nMegadrive / Genesis roms to $romdir/megadrive\nSG-1000 roms to $romdir/sg-1000\nSegaCD roms to $romdir/segacd\nThe Sega CD requires the BIOS files bios_CD_U.bin and bios_CD_E.bin and bios_CD_J.bin copied to $biosdir"
+rp_module_help="Place Genesis roms in:\n$romdir/megadrive\n\nSegaChannelRevival requires Expanded Rom Size Support\n\nUse [lr-genesis-plus-gx-EX] for SegaChannelRevival ROMs\n\nP4PR1UM requires +/-2.5GB Memory to run in its entirety\n\nUse [lr-genesis-plus-gx-EX-SWAP] for LOW RAM Hardware"
 rp_module_licence="NONCOM https://raw.githubusercontent.com/libretro/Genesis-Plus-GX/master/LICENSE.txt"
 rp_module_repo="git https://github.com/RapidEdwin08/Genesis-Plus-GX-Expanded-Rom-Size.git master"
 rp_module_section="exp"
@@ -54,6 +54,8 @@ function configure_lr-genesis-plus-gx-EX() {
         [[ "$system" == 'megadrive' ]] && addEmulator 0 "$md_id-SWAP" "$system" "$md_inst/ex-swap.sh %ROM%"
         addSystem "$system"
     done
+
+    [[ "$md_mode" == "remove" ]] && return
 
     local paprium_sys=lr-genesis-plus-gx-EX-SWAP
     echo Configure [emulators.cfg] to run [paprium] [Paprium] [PAPRIUM] with [$paprium_sys] to meet 2.5GB Memory Requirements
@@ -130,7 +132,7 @@ conf_memory_vars
 rpSwap on \$swap_mb
 
 # Command to run [genesis_plus_gx_libretro.so]
-# /opt/retropie/emulators/retroarch/bin/retroarch -L /opt/retropie/libretrocores/lr-genesis-plus-gx-EX/genesis_plus_gx_libretro.so --config /opt/retropie/configs/megadrive/retroarch.cfg /home/pi/RetroPie/roms/megadrive/Paprium.7z --appendconfig /dev/shm/retroarch.cfg
+## /opt/retropie/emulators/retroarch/bin/retroarch -L /opt/retropie/libretrocores/lr-genesis-plus-gx-EX/genesis_plus_gx_libretro.so --config /opt/retropie/configs/megadrive/retroarch.cfg /home/pi/RetroPie/roms/megadrive/Paprium.7z --appendconfig /dev/shm/retroarch.cfg
 /opt/retropie/emulators/retroarch/bin/retroarch -L $md_inst/genesis_plus_gx_libretro.so --config /opt/retropie/configs/megadrive/retroarch.cfg "\$@"
 
 # Turn Off and Remove [swapfile] IF needed
