@@ -57,7 +57,7 @@ function configure_lr-genesis-plus-gx-EX() {
 
     local paprium_sys=lr-genesis-plus-gx-EX-SWAP
     echo Configure [emulators.cfg] to run [paprium] [Paprium] [PAPRIUM] with [$paprium_sys] to meet 2.5GB Memory Requirements
-    if [ "$(cat /opt/retropie/configs/all/emulators.cfg | grep -e megadrive_paprium -e megadrive_Paprium)" == '' ]; then
+    if [ "$(cat /opt/retropie/configs/all/emulators.cfg | grep -e megadrive_paprium -e megadrive_Paprium -e megadrive_PAPRIUM)" == '' ]; then
         echo "megadrive_paprium = \"$paprium_sys\"" >> /opt/retropie/configs/all/emulators.cfg
         echo "megadrive_Paprium = \"$paprium_sys\"" >> /opt/retropie/configs/all/emulators.cfg
         echo "megadrive_PAPRIUM = \"$paprium_sys\"" >> /opt/retropie/configs/all/emulators.cfg
