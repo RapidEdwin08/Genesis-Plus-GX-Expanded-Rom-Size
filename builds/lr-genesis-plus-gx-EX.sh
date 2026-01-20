@@ -19,11 +19,11 @@ rp_module_id="lr-genesis-plus-gx-EX"
 rp_module_desc="Fork of lr-genesis-plus-gx + Expanded Rom Size Support"
 rp_module_help="Place Genesis roms in:\n$romdir/megadrive\n\nSegaChannelRevival requires Expanded Rom Size Support\n\nUse [lr-genesis-plus-gx-EX] for SegaChannelRevival ROMs\n\nP4PR1UM requires +/-2.5GB Memory to run in its entirety\n\nUse [lr-genesis-plus-gx-EX-SWAP] for LOW RAM Hardware"
 rp_module_licence="NONCOM https://raw.githubusercontent.com/libretro/Genesis-Plus-GX/master/LICENSE.txt"
-rp_module_repo="git https://github.com/RapidEdwin08/Genesis-Plus-GX-Expanded-Rom-Size.git master"
+rp_module_repo="git https://github.com/BillyTimeGames/Genesis-Plus-GX-Expanded-Rom-Size.git master"
 rp_module_section="exp"
 
 function sources_lr-genesis-plus-gx-EX() {
-    gitPullOrClone "$md_build" https://github.com/RapidEdwin08/Genesis-Plus-GX-Expanded-Rom-Size.git
+    gitPullOrClone "$md_build" https://github.com/BillyTimeGames/Genesis-Plus-GX-Expanded-Rom-Size.git
 }
 
 function build_lr-genesis-plus-gx-EX() {
