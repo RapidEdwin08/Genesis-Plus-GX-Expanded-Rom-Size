@@ -60,7 +60,7 @@ rm -Rf ~/Genesis-Plus-GX-Expanded-Rom-Size
 Get the [Genesis-Plus-GX-Expanded-Rom-Size] *Source* on your Device  
 ```bash
 cd ~
-git clone --depth=1 https://github.com/RapidEdwin08/Genesis-Plus-GX-Expanded-Rom-Size.git
+git clone --depth=1 https://github.com/BillyTimeGames/Genesis-Plus-GX-Expanded-Rom-Size.git
 
 ```
 Navigate to the *Source* folder Downloaded and *make*  
