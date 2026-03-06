@@ -65,6 +65,13 @@ git clone --depth=1 https://github.com/BillyTimeGames/Genesis-Plus-GX-Expanded-R
 sed -i 's+MAX_ROM_SIZE.*+MAX_ROM_SIZE = 93554432+g' ~/Genesis-Plus-GX-Expanded-Rom-Size/Makefile.libretro
 
 ```
+Should you encounter make 4.4.1 error: 'else' without a previous 'if' on your Device  
+```bash
+# Stream Edit workaround make 4.4.1 error: 'else' without a previous 'if' 520:7
+sed '520s+else+//else+' ~/Genesis-Plus-GX-Expanded-Rom-Size/libretro/libretro-common/cdrom/cdrom.c > /tmp/make.441
+mv /tmp/make.441 ~/Genesis-Plus-GX-Expanded-Rom-Size/libretro/libretro-common/cdrom/cdrom.c
+
+```
 Navigate to the *Source* folder Downloaded and *make*  
 The Makefile should Auto-Detect *Device* and Build appropriate *Core*  
 Successful Build should ouptut **[genesis_plus_gx_libretro.so]**  
