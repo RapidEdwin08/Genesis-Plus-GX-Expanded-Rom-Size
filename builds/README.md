@@ -37,7 +37,7 @@ sudo cp -R ./lr-genesis-plus-gx-EX /opt/retropie/libretrocores
 ```
 Set the Core File Permissions for Executable  
 ```bash
-sudo chmod 755 /opt/retropie/libretrocores/genesis_plus_gx_libretro.so
+sudo chmod 755 /opt/retropie/libretrocores/lr-genesis-plus-gx-EX/genesis_plus_gx_libretro.so
 
 ```
 Edit the *megadrive* Emulator Config file  
@@ -48,6 +48,17 @@ nano /opt/retropie/configs/megadrive/emulators.cfg
 Add the Line for the additional Emulator ***[lr-genesis-plus-gx-EX]*** to emulators.cfg  
 ```bash
 lr-genesis-plus-gx-EX = "/opt/retropie/emulators/retroarch/bin/retroarch -L /opt/retropie/libretrocores/lr-genesis-plus-gx-EX/genesis_plus_gx_libretro.so --config /opt/retropie/configs/megadrive/retroarch.cfg %ROM%"
+```
+*0ptional* Add the additional *ex-swap.sh* Emulator Script  
+```bash
+cd ~
+wget https://raw.githubusercontent.com/RapidEdwin08/Genesis-Plus-GX-Expanded-Rom-Size/master/builds/ex-swap.sh -P ~/
+sudo mv ~/ex-swap.sh /opt/retropie/libretrocores/lr-genesis-plus-gx-EX
+sudo chmod 755 /opt/retropie/libretrocores/lr-genesis-plus-gx-EX/ex-swap.sh
+```
+*0ptional* Add the Line for the additional *ex-swap.sh* Emulator ***[lr-genesis-plus-gx-EX-SWAP]*** to emulators.cfg  
+```bash
+lr-genesis-plus-gx-EX-SWAP = "/opt/retropie/libretrocores/lr-genesis-plus-gx-EX/ex-swap.sh %ROM%"
 ```
 
 ## [Source] Generic Device Build:  
