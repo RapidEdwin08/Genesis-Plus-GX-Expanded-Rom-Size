@@ -68,6 +68,7 @@ The Makefile should Auto-Detect *Device* and Build appropriate *Core*
 Successful Build should ouptut **[genesis_plus_gx_libretro.so]**  
 ```bash
 cd ~/Genesis-Plus-GX-Expanded-Rom-Size
+sed -i 's+MAX_ROM_SIZE.*+MAX_ROM_SIZE = 93554432+g' ~/Genesis-Plus-GX-Expanded-Rom-Size/Makefile.libretro
 make -f Makefile.libretro clean
 make -f Makefile.libretro
 
