@@ -24,7 +24,8 @@ rp_module_section="exp"
 
 function sources_lr-genesis-plus-gx-EX() {
     gitPullOrClone "$md_build" https://github.com/BillyTimeGames/Genesis-Plus-GX-Expanded-Rom-Size.git
-    sed -i 's+MAX_ROM_SIZE.*+MAX_ROM_SIZE = 93554432+g' "$md_build/Makefile.libretro"
+    sed -i 's+MAX_ROM_SIZE =.*+MAX_ROM_SIZE = 93554432+g' "$md_build/Makefile.libretro"
+    sed -i 's+define MAXROMSIZE.*+define MAXROMSIZE 93554432+g' "$md_build/core/loadrom.h"
 }
 
 function build_lr-genesis-plus-gx-EX() {
